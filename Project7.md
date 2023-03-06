@@ -56,3 +56,82 @@
 ### next, a database named 'tooling' is created and a user 'webaccess' created also. necessary permissions granted to the user on this database to be able to perform any operation only from the webserver subnet cidr
 
 ![nfs run](/images/dbcreate.PNG)
+
+
+## STEP 3 - Web Servers Setup
+
+## Launch a new instance and install NFS client
+`sudo yum install nfs-utils nfs4-acl-tools -y`
+
+### mount NFS server export for apps on /var/www/
+`sudo mkdir /var/www`
+
+`sudo mount -t nfs -o rw,nosuid <NFS-Server-Private-IP-Address>:/mnt/apps /var/www`
+
+## verify the NFS was successful mounted -> `df -h` 
+## ensure changes will persist on webserver after reboot and add the line <NFS-Server-Private-IP-Address>:/mnt/apps /var/www nfs defaults 0 0
+
+`sudo vi/etc/fstab`
+
+### - The Remi's repo, apache and php are all installed next. I am making use of RHEL OS 9 the installation is slightly different from 8:
+`sudo dnf update -y`
+
+`sudo dnf upgrade --refresh -y`
+
+`sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms`
+
+`sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm`
+
+`sudo dnf install epel-release`
+
+`sudo dnf update`
+
+`sudo dnf install https://rpms.remirepo.net/enterprise/remi-release-9.rpm`
+
+`sudo dnf module install php:remi-8.1`
+
+`sudo dnf install php php-opcache php-gd php-curl php-mysqlnd`
+
+`sudo systemctl start php-fpm`
+
+`sudo systemctl enable php-fpm`
+
+`setsebool -P httpd_execmem 1`
+
+### - Verification that the apache files and directories are webserver /var/www and the nfs server in mnt/apps by creating a new file in one server and confiming if it is present in other wweb servers.
+
+### - The log folder for apache on webserver is mounted to nfs server export for logs 
+`sudo mount -t nfs -o rw,nosuid <NFS-Server-Private-IP-Address>:/mnt/logs /var/log/httpd`
+
+### - The tooling website code was forked from the git repository by installing git via the command line first and then cloning the repository
+
+![clone](/images/repo-clone.PNG)
+
+### - The html folder from the repo is copied into the the /var/www/html 
+
+![html file](/images/htmlfile-copy.PNG)
+
+
+### - The TCP port 80 on the web server is opened to allow connections from everywhere. The permissions on the /var/www/html folder is checked and also SELinux is disabled by setting SELINUX=disabled.
+
+`sudo setenforce 0`
+
+`sudo vi /etc/sysconfig/selinux`
+
+### - The website configuration to connect to db is updated in /var/www/html/functions.php. Then tooling-db.sql script is added to the db 
+
+`mysql -h <databse-private-ip> -u <db-username> -p <db-pasword> < tooling-db.sql`
+
+### - open the /etc/httpd/conf.d/welcome.conf and move to /etc/httpd/conf.d/welcome.backup. The Apache httpd service is then restarted.
+
+### - The MySQL/Aurora port connection is opened on the db server EC2 instance.
+
+### - Access the created database and create a new admin user to access the web authentication
+![admin](/images/admin-toolweb.PNG)
+
+### - The website can be accessed via http://<Web-Server-Public-IP-Address-or-Public-DNS-Name>/index.php
+![web](/images/tooling-webpage.PNG)
+
+![web](/images/new-toolweb.PNG)
+
+
