@@ -46,3 +46,13 @@
 
 ### update the ports used by the NFS by opening it using security groups inbound rule so that the NFS server can be accessed from the client (TCP 111, UDP 111, UDP 2049)
 `rpcinfo -p | grep nfs`
+
+## STEP 2 - DB Server Configuration
+
+### MySQL is installed on the DB server 
+`sudo apt update`
+`sudo apt install mysql-server`
+
+### next, a database named 'tooling' is created and a user 'webaccess' created also. necessary permissions granted to the user on this database to be able to perform any operation only from the webserver subnet cidr
+
+![nfs run](/images/dbcreate.PNG)
